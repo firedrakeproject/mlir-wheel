@@ -68,18 +68,9 @@ jobs:
   build-macos:
     name: Build dist files (macOS)
     runs-on: [self-hosted, macOS]
-    strategy:
-      matrix:
-        # Don't need as many Python versions for macOS
-        python-version: [3.13, 3.14]
 
     steps:
       - uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
 
       - name: Set version in pyproject.toml
         run: |
