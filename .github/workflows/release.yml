@@ -92,9 +92,7 @@ jobs:
           SKBUILD_CMAKE_SOURCE_DIR: llvm-project/llvm
           SKBUILD_CMAKE_ARGS: -DCMAKE_C_COMPILER=clang;-DCMAKE_CXX_COMPILER=clang++;-DLLVM_ENABLE_LLD=ON
 
-        run: |
-          pip install build
-          python -m build --wheel --verbose .
+        run: python -m build --wheel --verbose .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
