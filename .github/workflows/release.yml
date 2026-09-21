@@ -70,6 +70,10 @@ jobs:
     runs-on: [self-hosted, macOS]
 
     steps:
+      - name: Install system dependencies
+        run: |
+          brew install clang lld python
+
       - uses: actions/checkout@v7
 
       - name: Set version in pyproject.toml
