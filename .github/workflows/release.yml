@@ -74,8 +74,8 @@ jobs:
 
       - name: Set version in pyproject.toml
         run: |
-          :# Note that the sed command is different to the Linux one because
-          :# macOS sed is slightly different
+          : # Note that the sed command is different to the Linux one because
+          : # macOS sed is slightly different
           sed -iE 's/VERSION/"${{ inputs.version }}"/' pyproject.toml
           cat pyproject.toml
 
