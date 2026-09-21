@@ -127,7 +127,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$( gh release view ${{ inputs.version }} )" ]; then
+          if [ "$( gh release view ${{ inputs.version }} )" ]; then
             : # version exists
             gh release upload --clobber ${{ inputs.version }} dist/*
           else
