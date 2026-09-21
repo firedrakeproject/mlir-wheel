@@ -20,9 +20,7 @@ jobs:
       image: ubuntu:latest
     strategy:
       matrix:
-        # UNDO ME
-        # python-version: [3.11, 3.12, 3.13, 3.14]
-        python-version: [3.11, 3.12]
+        python-version: [3.11, 3.12, 3.13, 3.14]
 
     steps:
       - name: Install system dependencies
