@@ -11,21 +11,18 @@ on:
         description: The version number to release
         type: string
         required: true
-      python-version:
-        description: The Python version to build the wheel for
-        type: string
-        required: true
-      modify-existing-release:
-        description: Does the release already exist?
-        type: boolean
-        required: true
 
 jobs:
-  build:
-    name: Build dist files
+  build-linux:
+    name: Build dist files (Linux)
     runs-on: [self-hosted, Linux]
     container:
       image: ubuntu:latest
+    strategy:
+      matrix:
+        # UNDO ME
+        # python-version: [3.11, 3.12, 3.13, 3.14]
+        python-version: [3.11, 3.12]
 
     steps:
       - name: Install system dependencies
@@ -38,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ inputs.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Set version in pyproject.toml
         run: |
@@ -63,51 +60,78 @@ jobs:
           python -m build --wheel --verbose .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: dist
+          name: dist-linux
           path: dist/
 
-  pypi:
-    name: Push dist to PyPI
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: release
-    permissions:
-      id-token: write
+  build-macos:
+    name: Build dist files (macOS)
+    runs-on: [self-hosted, macOS]
+    strategy:
+      matrix:
+        # Don't need as many Python versions for macOS
+        python-version: [3.13, 3.14]
+
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
+      - uses: actions/checkout@v7
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set version in pyproject.toml
+        run: |
+          sed -i 's/VERSION/"${{ inputs.version }}"/' pyproject.toml
+          cat pyproject.toml
+
+      - name: Clone LLVM
+        uses: actions/checkout@v7
+        with:
+          repository: llvm/llvm-project
+          path: llvm-project
+          ref: ${{ inputs.llvm-branch }}
+
+      - name: Build wheel
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+          SKBUILD_CMAKE_SOURCE_DIR: llvm-project/llvm
+          SKBUILD_CMAKE_ARGS: -DCMAKE_C_COMPILER=clang;-DCMAKE_CXX_COMPILER=clang++;-DLLVM_ENABLE_LLD=ON
+
+        run: |
+          pip install build
+          python -m build --wheel --verbose .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist-macos
+          path: dist/
 
   github_release:
-    name: Create/update GitHub release
-    needs: build
+    name: Create GitHub release
+    needs: [build-linux, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
-          name: dist
+          pattern: dist-*
           path: dist/
+          merge-multiple: true
 
-      - name: Create new release
-        if: inputs.modify-existing-release == false
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create --title ${{ inputs.version }} ${{ inputs.version }} dist/*
-
-      - name: Update existing release
-        if: inputs.modify-existing-release == true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload --clobber ${{ inputs.version }} dist/*
+        run: |
+          if [ -z "$( gh release view ${{ inputs.version }} )" ]; then
+            : # version exists
+            gh release upload --clobber ${{ inputs.version }} dist/*
+          else
+            : # version does not exist
+            gh release create --title ${{ inputs.version }} ${{ inputs.version }} dist/*
+          fi
