@@ -70,6 +70,10 @@ jobs:
     runs-on: [self-hosted, macOS]
 
     steps:
+      - name: Install system dependencies
+        run: |
+          brew install python-build
+
       - uses: actions/checkout@v7
 
       - name: Set version in pyproject.toml
@@ -92,7 +96,8 @@ jobs:
           SKBUILD_CMAKE_SOURCE_DIR: llvm-project/llvm
           SKBUILD_CMAKE_ARGS: -DCMAKE_C_COMPILER=clang;-DCMAKE_CXX_COMPILER=clang++;-DLLVM_ENABLE_LLD=ON
 
-        run: python -m build --wheel --verbose .
+        run: |
+          python3 -m build --wheel --verbose .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
