@@ -72,7 +72,7 @@ jobs:
     steps:
       - name: Install system dependencies
         run: |
-          brew install clang lld python
+          brew install lld python
 
       - uses: actions/checkout@v7
 
